@@ -1,23 +1,19 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-
-	//"os"
-	"fmt"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	tgbotapi "github.com/syfaro/telegram-bot-api"
-
-	//"time"
-	//"github.com/go-co-op/gocron"
-	"database/sql"
-
+	"github.com/go-co-op/gocron"
 	_ "github.com/lib/pq"
+	tgbotapi "github.com/syfaro/telegram-bot-api"
 )
 
 func makeRequest() string {
@@ -43,8 +39,11 @@ func parsePage(html string) string {
 }
 
 func formatter(content string) string {
-	content = strings.Replace(content, "Показать полностью...", "", -1)
-	formatted := strings.Replace(content, "#", "\n\n#", -1)
+	expanderText := [2]string{"Показать полностью...", "See more"}
+	for _, text := range expanderText {
+		content = strings.ReplaceAll(content, text, "")
+	}
+	formatted := strings.ReplaceAll(content, "#", "\n\n#")
 	return formatted
 }
 
@@ -56,17 +55,28 @@ func sendAnnounce(announceText string, bot *tgbotapi.BotAPI, userList []int64) s
 	return "Message sent"
 }
 
-func cronTask(bot *tgbotapi.BotAPI, userList []int64) {
-	sendAnnounce(formatter(parsePage(makeRequest())), bot, userList)
-}
-
-const (
-	db_host     = "//"
-	db_port     = 5432
-	db_user     = "postgres"
-	db_password = "//"
-	db_name     = "bot-rwb"
+var (
+	db_host     = os.Getenv("DB_HOST")
+	db_port     = os.Getenv("DB_PORT")
+	db_user     = os.Getenv("DB_USER")
+	db_password = os.Getenv("DB_PASSWORD")
+	db_name     = os.Getenv("DB_NAME")
 )
+
+func checkDBConnection(psqlInfo string) {
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		log.Printf("Unable to connect to database with following parameters: " + psqlInfo)
+		panic(err)
+	}
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		log.Printf("Unable to connect to database with following parameters: " + psqlInfo)
+		panic(err)
+	}
+	log.Printf("Successfully connected to Database with following parameters: " + psqlInfo)
+}
 
 func checkIfUserExists(psqlInfo string, chatID int64) bool {
 	db, err := sql.Open("postgres", psqlInfo)
@@ -95,8 +105,8 @@ func addUserToDB(psqlInfo string, chatID int64) {
 		panic(err)
 	}
 	sqlStatement := `
-  INSERT INTO public.users (id)
-  VALUES ($1)`
+  		INSERT INTO public.users (id)
+  		VALUES ($1)`
 	db.Exec(sqlStatement, chatID)
 	db.Close()
 }
@@ -107,8 +117,8 @@ func deleteUserFromDB(psqlInfo string, chatID int64) {
 		panic(err)
 	}
 	sqlStatement := `
-  DELETE FROM public.users
-  WHERE id=($1)`
+  		DELETE FROM public.users
+  		WHERE id=($1)`
 	db.Exec(sqlStatement, chatID)
 	db.Close()
 }
@@ -131,27 +141,37 @@ func getUsersList(psqlInfo string) []int64 {
 }
 
 func main() {
+	// establish psql session
 	psqlInfo := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		db_host, db_port, db_user, db_password, db_name)
+	checkDBConnection(psqlInfo)
+
+	// bot initialization
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		log.Panic(err)
 	}
 	bot.Debug = true
 	log.Printf("Authorized on account %s", bot.Self.UserName)
-	//scheduler := gocron.NewScheduler(time.UTC)
-	//scheduler.Every(1).Friday().At("16:00").Do(cronTask)
-	//scheduler.StartBlocking()
-	//cronTask(bot, getUsersList(psqlInfo))
+
+	// scheduler block
+	scheduler := gocron.NewScheduler(time.UTC)
+	scheduler.Every(1).Friday().At("18:00").Do(func() {
+		sendAnnounce(formatter(parsePage(makeRequest())), bot, getUsersList(psqlInfo))
+	})
+	scheduler.StartAsync()
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := bot.GetUpdatesChan(u)
+
+	// chat handler
 	for update := range updates {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
-		if update.Message.Text == "/subscribe" {
+		switch update.Message.Text {
+		case "/subscribe":
 			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 			if checkIfUserExists(psqlInfo, update.Message.Chat.ID) == false {
 				addUserToDB(psqlInfo, update.Message.Chat.ID)
@@ -162,12 +182,18 @@ func main() {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "You are already subscribed")
 				bot.Send(msg)
 			}
-		}
-		if update.Message.Text == "/unsubscribe" {
+		case "/unsubscribe":
 			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 			deleteUserFromDB(psqlInfo, update.Message.Chat.ID)
 			log.Printf("User %d unsubscribed", update.Message.Chat.ID)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "You are unsubscribed")
+			bot.Send(msg)
+		default:
+			const title = "Hi! I'm Racing Weekend Schedule Bot\n" +
+				"To subscribe on weekly updates type /subscribe.\n" +
+				"To unsubscribe from updates type /unsubscribe\n" +
+				"Type whatever you want to see this message"
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, title)
 			bot.Send(msg)
 		}
 	}

@@ -51,6 +51,8 @@ func sendAnnounce(announceText string, bot *tgbotapi.BotAPI, userList []int64) s
 	for _, user := range userList {
 		msg := tgbotapi.NewMessage(user, announceText)
 		bot.Send(msg)
+		log.Println("New announce sent:")
+		log.Println(announceText)
 	}
 	return "Message sent"
 }
@@ -66,16 +68,16 @@ var (
 func checkDBConnection(psqlInfo string) {
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		log.Printf("Unable to connect to database with following parameters: " + psqlInfo)
+		log.Println("Unable to connect to database with following parameters: " + psqlInfo)
 		panic(err)
 	}
 	defer db.Close()
 	err = db.Ping()
 	if err != nil {
-		log.Printf("Unable to connect to database with following parameters: " + psqlInfo)
+		log.Println("Unable to connect to database with following parameters: " + psqlInfo)
 		panic(err)
 	}
-	log.Printf("Successfully connected to Database with following parameters: " + psqlInfo)
+	log.Println("Successfully connected to Database with following parameters: " + psqlInfo)
 }
 
 func checkIfUserExists(psqlInfo string, chatID int64) bool {
@@ -143,7 +145,7 @@ func getUsersList(psqlInfo string) []int64 {
 func main() {
 	// establish psql session
 	psqlInfo := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%s user=%s password=%s dbname=%s",
 		db_host, db_port, db_user, db_password, db_name)
 	checkDBConnection(psqlInfo)
 
@@ -152,7 +154,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	bot.Debug = true
+	bot.Debug = false
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	// scheduler block

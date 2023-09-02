@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM alpine:latest
 
 ARG BOT_TOKEN
 ARG DB_PASSWORD
@@ -15,8 +15,8 @@ ENV DB_HOST=${DB_HOST}
 ENV DB_NAME=${DB_NAME}
 
 #INSTALL CA-CERTS
-RUN apt -q update && apt install -qy ca-certificates
+RUN apk update && apk add ca-certificates
 RUN update-ca-certificates
 #COPY BINARY
-COPY main .
+COPY ./cmd/main .
 CMD ["./main"]

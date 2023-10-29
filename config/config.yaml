@@ -1,0 +1,15 @@
+env: prod
+database-engine: "postgres"
+bot:
+  token: ""
+  timeout: 60
+  debug: false
+postgres:
+  Host: "localhost"
+  port: 5432
+  user: user
+  password: password
+  database: rwsb
+api:
+  f1: "https://ergast.com/api/f1/current/next.json"
+  motogp: "https://to.do"

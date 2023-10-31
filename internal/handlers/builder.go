@@ -12,7 +12,7 @@ The racing weekend is coming! Don't miss anything
 `
 
 var (
-	f1_template = `
+	f1Template = `
 
 🏎️FORMULA 1
 %s
@@ -22,7 +22,7 @@ var (
 🏴Practice2: %s %s
 🏴Practice3: %s %s
 `
-	f1_template_sprint = `
+	f1TemplateSprint = `
 
 🏎️FORMULA 1
 %s
@@ -33,7 +33,11 @@ var (
 🏴Practice2: %s %s
 🏴Practice3: %s %s
 `
-	motogp_template = `
+	motogpTemplate = `
+🏍️
+`
+
+	motogpTemplateSprint = `
 🏍️
 `
 )
@@ -46,34 +50,34 @@ func (s Service) BuildAnnounceText(ctx context.Context) (string, error) {
 	source := "announce.builder.datacollector"
 	log := s.log.With("handler", source)
 	log.Info("build announce started")
-	var final_string string
+	var finalString string
 	data, err := racingapi.DataCollector(ctx, s.series, log)
 	if err != nil {
-		return final_string, err
+		return finalString, err
 	}
 
-	final_string = template
+	finalString = template
 
 	if d, ok := data[racingapi.SERIES_f1]; ok {
 		if d.Sprint.Date != "" {
-			final_string += eventWithSprint(d, f1_template_sprint)
+			finalString += eventWithSprint(d, f1TemplateSprint)
 		} else {
-			final_string += eventGeneral(d, f1_template)
+			finalString += eventGeneral(d, f1Template)
 		}
 	}
 
 	if d, ok := data[racingapi.SERIES_motogp]; ok {
 		if d.Sprint.Date != "" {
-			final_string += eventWithSprint(d, f1_template_sprint)
+			finalString += eventWithSprint(d, motogpTemplate)
 		} else {
-			final_string += eventGeneral(d, f1_template)
+			finalString += eventGeneral(d, motogpTemplateSprint)
 		}
 	}
-	return final_string, err
+	return finalString, err
 }
 
 func eventWithSprint(d racingapi.RaceWeekendSchedule, t string) string {
-	return fmt.Sprintf(f1_template_sprint,
+	return fmt.Sprintf(t,
 		d.RaceName,
 		formatDate(d.Race.Date),
 		formatTime(d.Race.Time),
@@ -91,7 +95,7 @@ func eventWithSprint(d racingapi.RaceWeekendSchedule, t string) string {
 }
 
 func eventGeneral(d racingapi.RaceWeekendSchedule, t string) string {
-	return fmt.Sprintf(f1_template,
+	return fmt.Sprintf(t,
 		d.RaceName,
 		formatDate(d.Race.Date),
 		formatTime(d.Race.Time),

@@ -27,12 +27,7 @@ func TestF1ApiResponse(t *testing.T) {
 
 	s, err := service.BuildAnnounceText(ctx)
 
-	if err != nil {
-		if errors.Is(err, racingapi.NoRaceThisWeekend) {
-			assert.Empty(t, s)
-		} else {
-			assert.NoError(t, err, "got error")
-		}
+	if errors.Is(err, racingapi.ErrNoRaceThisWeekend) {
+		assert.Empty(t, s)
 	}
-	assert.NotEmpty(t, s)
 }

@@ -21,21 +21,21 @@ type Flags struct {
 
 func main() {
 
-	//parse flags
+	// parse flags
 	flags := Flags{}
 	parseFlags(&flags)
 
-	//load config
+	// load config
 	cfg := config.MustLoad(flags.Config)
 
-	//load logger
+	// load logger
 	log := logger.NewLogger(cfg.Env)
 	log.Info("race weekend schedule bot starting...")
 
-	//set parent context
+	// set parent context
 	ctx := context.Background()
 
-	//init bot
+	// init bot
 	bot, err := boto.NewBot(boto.BotConfig{
 		BotToken:  cfg.Bot.BotToken,
 		Timeout:   cfg.Bot.Timeout,
@@ -46,7 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	//init database
+	// init database
 	db, err := postgres.New(ctx, postgres.Config{
 		Host:     cfg.Postgress.Host,
 		Port:     cfg.Postgress.Port,
@@ -58,7 +58,7 @@ func main() {
 		log.Error("unable to connect to postgres: %v", err)
 		os.Exit(1)
 	}
-	//define series
+	// define series
 	series := []racingapi.Series{
 		f1.F1API{URL: cfg.Api.F1},
 		motogp.MotoGPApi{URL: cfg.Api.Motogp},
@@ -70,7 +70,7 @@ func main() {
 		log,
 		series)
 
-	//schedule handler
+	// schedule handler
 	botHandlers.RunAnnounceScheduler(ctx)
 
 	// chat handler

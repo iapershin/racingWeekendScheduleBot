@@ -65,7 +65,7 @@ func (a F1API) GetData(ctx context.Context, logger racingapi.Logger) (racingapi.
 
 	fornatted := formatresponse(apiResponse)
 	if fornatted.Race.Date == "" {
-		return output, racingapi.NoRaceThisWeekend
+		return output, racingapi.ErrNoRaceThisWeekend
 	}
 
 	eventDateTime := fmt.Sprintf("%sT%s", fornatted.Race.Date, fornatted.Race.Time)
@@ -76,7 +76,7 @@ func (a F1API) GetData(ctx context.Context, logger racingapi.Logger) (racingapi.
 	}
 
 	if !isUpcoming {
-		return output, racingapi.NoRaceThisWeekend
+		return output, racingapi.ErrNoRaceThisWeekend
 	}
 	return fornatted, err
 }

@@ -11,5 +11,5 @@ type MotoGPApi struct {
 
 func (a MotoGPApi) GetData(ctx context.Context, logger racingapi.Logger) (racingapi.RaceWeekendSchedule, error) {
 	// TODO: to implemet
-	return racingapi.RaceWeekendSchedule{}, racingapi.NoRaceThisWeekend
+	return racingapi.RaceWeekendSchedule{}, racingapi.ErrNoRaceThisWeekend
 }

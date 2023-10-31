@@ -5,7 +5,7 @@ bot:
   timeout: 60
   debug: false
 postgres:
-  Host: "localhost"
+  Host: postgres
   port: 5432
   user: user
   password: password

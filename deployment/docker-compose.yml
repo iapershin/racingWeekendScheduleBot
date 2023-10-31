@@ -1,11 +1,67 @@
 version: '3.8'
 
 services:
+  bot:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES.HOST=postgres
+      - BOT_TOKEN
+    deploy:
+      resources:
+        limits:
+          cpus: 0.50
+          memory: 128M
+    links:
+      - "fluentd"
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: "bot.logs"
+      
+
   postgres:
     image: "postgres:15-alpine"
     environment:
-    - POSTGRES_USER=user
-    - POSTGRES_PASSWORD=password
-    - POSTGRES_DB=rwsb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=rwsb
     ports:
-    - "5432:5432"
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: 0.50
+          memory: 128M
+
+  fluentd:
+    build: ./fluentd
+    container_name: fluentd
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+    links:
+      - "elasticsearch"
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: elasticsearch
+    environment:
+      - "discovery.type=single-node"
+    expose:
+      - "9200"
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.4
+    links:
+      - "elasticsearch"
+    ports:
+      - "5601:5601"

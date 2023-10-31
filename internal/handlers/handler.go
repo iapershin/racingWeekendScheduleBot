@@ -17,11 +17,11 @@ import (
 )
 
 const (
-	SUB_MSG         = "You are subscribed!"
-	SUB_ALREADY_MSG = "You are already subscribed"
-	UNSUB_MSG       = "You are unsubscribed"
+	subMsg        = "You are subscribed!"
+	subAlreadyMsg = "You are already subscribed"
+	unsubMsg      = "You are unsubscribed"
 
-	DEFAULT_MSG = `Hi! I'm Racing Weekend Schedule Bot
+	defaultMsg = `Hi! I'm Racing Weekend Schedule Bot
 To subscribe on weekly updates type /subscribe.
 To unsubscribe from updates type /unsubscribe.
 Type whatever you want to see this message.`
@@ -74,10 +74,10 @@ func (s Service) SubscribeHandler(ctx context.Context, update *tgbotapi.Update) 
 	err := s.repo.CheckIfUserExists(ctx, user)
 	if err != nil {
 		switch {
-		case errors.Is(err, users.UserExistsErr):
-			msg = SUB_ALREADY_MSG
-		case errors.Is(err, users.UserNotExistsErr):
-			msg = SUB_MSG
+		case errors.Is(err, users.ErrUserExists):
+			msg = subAlreadyMsg
+		case errors.Is(err, users.ErrUserNotExists):
+			msg = subMsg
 			err = s.repo.AddUserToDB(ctx, user)
 			if err != nil {
 				log.Error(fmt.Sprintf("add user [%d] to db error: %s", update.Message.Chat.ID, err.Error()))
@@ -113,7 +113,7 @@ func (s Service) UnsubscribeHandler(ctx context.Context, update *tgbotapi.Update
 	}
 	log.Info(fmt.Sprintf("User [%d] unsubscribed", update.Message.From.ID))
 
-	err = s.bot.NewMessageToUser(user, UNSUB_MSG)
+	err = s.bot.NewMessageToUser(user, unsubMsg)
 	if err != nil {
 		log.Error("bot send message error: %w", err)
 		return fmt.Errorf("can't send message to [%d]", user)
@@ -126,7 +126,7 @@ func (s Service) DefaultHandler(ctx context.Context, update *tgbotapi.Update) er
 	source := "handlers.unsubscribe"
 	log := s.log.With("handler", source)
 	user := update.Message.Chat.ID
-	err := s.bot.NewMessageToUser(user, DEFAULT_MSG)
+	err := s.bot.NewMessageToUser(user, defaultMsg)
 	if err != nil {
 		log.Error("bot send message error: %w", err)
 		return fmt.Errorf("can't send message to [%d]", user)
@@ -154,7 +154,7 @@ func (s Service) RunAnnounceScheduler(ctx context.Context) {
 }
 
 func (s Service) RunAnnounceSchedulerForce(ctx context.Context) {
-	//for testing only
+	// for testing only
 	source := "handlers.announce"
 	log := s.log.With("handler", source)
 	log.Info("It's time to send announce...")
@@ -166,7 +166,6 @@ func (s Service) RunAnnounceSchedulerForce(ctx context.Context) {
 	if err != nil {
 		log.Error("failed to get user list: %w", err)
 	}
-	fmt.Println(announceText, userList)
 	s.SendAnnounce(announceText, userList)
 }
 

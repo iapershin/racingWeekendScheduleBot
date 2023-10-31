@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	NoRaceThisWeekend = errors.New("no race this weekend")
+	ErrNoRaceThisWeekend = errors.New("no race this weekend")
 )
 
 const (
@@ -66,7 +66,7 @@ func DataCollector(ctx context.Context, series []Series, logger Logger) (map[str
 			data, err := s.GetData(ctx, logger)
 			if err != nil {
 				switch {
-				case errors.Is(err, NoRaceThisWeekend):
+				case errors.Is(err, ErrNoRaceThisWeekend):
 					log.Warn(fmt.Sprintf("%s no races found", s))
 				default:
 					log.Error("Error fetching data source: %w", err)
@@ -84,7 +84,7 @@ func DataCollector(ctx context.Context, series []Series, logger Logger) (map[str
 	wg.Wait()
 
 	if len(eventsMap) == 0 {
-		return eventsMap, NoRaceThisWeekend
+		return eventsMap, ErrNoRaceThisWeekend
 	}
 
 	return eventsMap, nil

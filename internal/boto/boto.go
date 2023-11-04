@@ -2,7 +2,6 @@ package boto
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -30,8 +29,6 @@ func NewBot(config BotConfig) (*Bot, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("authorized on account %s", bot.Self.UserName)
 
 	bot.Debug = config.DebugMode
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"race-weekend-bot/internal/boto"
 	"race-weekend-bot/internal/config"
@@ -45,6 +46,8 @@ func main() {
 		log.Error("can't init bot: %w", err)
 		os.Exit(1)
 	}
+
+	log.Info(fmt.Sprintf("authorized on account: %s", bot.BotApi.Self.UserName))
 
 	// init database
 	db, err := postgres.New(ctx, postgres.Config{

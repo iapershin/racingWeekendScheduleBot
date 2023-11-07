@@ -2,8 +2,7 @@ package racingapi_test
 
 import (
 	"context"
-	"race-weekend-bot/internal/logger"
-	"race-weekend-bot/internal/racingapi/f1"
+	mock "race-weekend-bot/internal/racingapi/_mock"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +10,8 @@ import (
 
 func TestF1ApiResponse(t *testing.T) {
 	ctx := context.Background()
-	api := f1.F1API{URL: "https://ergast.com/api/f1/current/next.json"}
-	_, err := api.GetData(ctx, logger.NewLogger("test"))
-	assert.NoError(t, err, "error")
+	api := mock.MockAPI{}
+	_, err := api.GetData(ctx, nil)
+
+	assert.NoError(t, err)
 }

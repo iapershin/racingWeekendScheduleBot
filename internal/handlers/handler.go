@@ -38,33 +38,23 @@ type Repository interface {
 	CheckIfUserExists(ctx context.Context, chatID int64) error
 }
 
-type Logger interface {
-	Debug(msg string, args ...interface{})
-	Error(msg string, args ...interface{})
-	Info(msg string, args ...interface{})
-	Warn(msg string, args ...interface{})
-	With(args ...interface{}) *slog.Logger
-}
-
 type Service struct {
 	bot    Bot
 	repo   Repository
-	log    Logger
 	series []racingapi.Series
 }
 
-func NewBotHandlers(bot Bot, repo Repository, log Logger, series []racingapi.Series) *Service {
+func NewBotHandlers(bot Bot, repo Repository, series []racingapi.Series) *Service {
 	return &Service{
 		bot:    bot,
 		repo:   repo,
-		log:    log,
-		series: series,
+		series: []racingapi.Series{},
 	}
 }
 
 func (s Service) SubscribeHandler(ctx context.Context, update *tgbotapi.Update) error {
 	source := "handlers.subscribe"
-	log := s.log.With("handler", source)
+	log := slog.With("handler", source)
 
 	log.Info(fmt.Sprintf("%d %s", update.Message.From.ID, update.Message.Text))
 
@@ -101,7 +91,7 @@ func (s Service) SubscribeHandler(ctx context.Context, update *tgbotapi.Update) 
 
 func (s Service) UnsubscribeHandler(ctx context.Context, update *tgbotapi.Update) error {
 	source := "handlers.unsubscribe"
-	log := s.log.With("handler", source)
+	log := slog.With("handler", source)
 
 	log.Info(fmt.Sprintf("%d %s", update.Message.From.ID, update.Message.Text))
 
@@ -124,7 +114,7 @@ func (s Service) UnsubscribeHandler(ctx context.Context, update *tgbotapi.Update
 
 func (s Service) DefaultHandler(ctx context.Context, update *tgbotapi.Update) error {
 	source := "handlers.unsubscribe"
-	log := s.log.With("handler", source)
+	log := slog.With("handler", source)
 	user := update.Message.Chat.ID
 	err := s.bot.NewMessageToUser(user, defaultMsg)
 	if err != nil {
@@ -136,7 +126,7 @@ func (s Service) DefaultHandler(ctx context.Context, update *tgbotapi.Update) er
 
 func (s Service) RunAnnounceScheduler(ctx context.Context) {
 	source := "handlers.announce"
-	log := s.log.With("handler", source)
+	log := slog.With("handler", source)
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.Every(1).Friday().At("18:00").Do(func() {
 		log.Info("It's time to send announce...")
@@ -156,7 +146,7 @@ func (s Service) RunAnnounceScheduler(ctx context.Context) {
 func (s Service) RunAnnounceSchedulerForce(ctx context.Context) {
 	// for testing only
 	source := "handlers.announce"
-	log := s.log.With("handler", source)
+	log := slog.With("handler", source)
 	log.Info("It's time to send announce...")
 	announceText, err := s.BuildAnnounceText(ctx)
 	if err != nil {
@@ -171,7 +161,7 @@ func (s Service) RunAnnounceSchedulerForce(ctx context.Context) {
 
 func (s Service) SendAnnounce(announceText string, userList []int64) {
 	source := "handlers.announce.sender"
-	log := s.log.With("handler", source)
+	log := slog.With("handler", source)
 	subsTotal := len(userList)
 	affected := []int64{}
 

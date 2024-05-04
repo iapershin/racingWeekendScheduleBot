@@ -9,7 +9,7 @@ type MotoGPApi struct {
 	URL string
 }
 
-func (a MotoGPApi) GetData(ctx context.Context, logger racingapi.Logger) (racingapi.RaceWeekendSchedule, error) {
+func (a MotoGPApi) GetData(ctx context.Context) (racingapi.RaceWeekendSchedule, error) {
 	// TODO: to implemet
 	return racingapi.RaceWeekendSchedule{}, racingapi.ErrNoRaceThisWeekend
 }

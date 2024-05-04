@@ -13,7 +13,7 @@ type Client struct {
 }
 
 type Config struct {
-	Host     string `yaml:"Host"`
+	Host     string `yaml:"host"`
 	Port     int    `yaml:"port" env-default:"5432"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`

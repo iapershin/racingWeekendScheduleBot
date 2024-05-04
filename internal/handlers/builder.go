@@ -3,6 +3,8 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"race-weekend-bot/internal/datacollector"
 	"race-weekend-bot/internal/racingapi"
 	"time"
 )
@@ -42,16 +44,12 @@ var (
 `
 )
 
-type Series interface {
-	DataCollector(ctx context.Context) (map[string]racingapi.RaceWeekendSchedule, error)
-}
-
 func (s Service) BuildAnnounceText(ctx context.Context) (string, error) {
 	source := "announce.builder.datacollector"
-	log := s.log.With("handler", source)
+	log := slog.With("handler", source)
 	log.Info("build announce started")
 	var finalString string
-	data, err := racingapi.DataCollector(ctx, s.series, log)
+	data, err := datacollector.CollectData(ctx, s.series)
 	if err != nil {
 		return finalString, err
 	}

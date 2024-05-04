@@ -1,11 +1,16 @@
 env: prod
+app:
+  logger:
+    level: debug
+    format: json
+    addSource: true
 database-engine: "postgres"
 bot:
   token: ""
   timeout: 60
   debug: false
 postgres:
-  Host: postgres
+  host: postgres
   port: 5432
   user: user
   password: password

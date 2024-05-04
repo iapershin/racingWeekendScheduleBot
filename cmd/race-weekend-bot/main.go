@@ -4,7 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
+	"log"
+	"log/slog"
 	"race-weekend-bot/internal/boto"
 	"race-weekend-bot/internal/config"
 	"race-weekend-bot/internal/handlers"
@@ -29,9 +30,16 @@ func main() {
 	// load config
 	cfg := config.MustLoad(flags.Config)
 
+	//load logger
+	if err := logger.Init(logger.HandlerOptions{
+		Level:  cfg.App.Logger.Level,
+		Format: logger.Format(cfg.App.Logger.Format),
+	}); err != nil {
+		log.Fatalf("unable to initialize logger: %s", err.Error())
+	}
+
 	// load logger
-	log := logger.NewLogger(cfg.Env)
-	log.Info("race weekend schedule bot starting...")
+	slog.Info("race weekend schedule bot starting...")
 
 	// set parent context
 	ctx := context.Background()
@@ -43,11 +51,10 @@ func main() {
 		DebugMode: cfg.Bot.DebugMode,
 	})
 	if err != nil {
-		log.Error("can't init bot: %w", err)
-		os.Exit(1)
+		log.Fatal("can't init bot: %w", err)
 	}
 
-	log.Info(fmt.Sprintf("authorized on account: %s", bot.BotApi.Self.UserName))
+	slog.Info(fmt.Sprintf("authorized on account: %s", bot.BotApi.Self.UserName))
 
 	// init database
 	db, err := postgres.New(ctx, postgres.Config{
@@ -58,20 +65,15 @@ func main() {
 		Database: cfg.Postgress.Database,
 	})
 	if err != nil {
-		log.Error("unable to connect to postgres: %v", err)
-		os.Exit(1)
+		log.Fatal("unable to connect to postgres: %w", err)
 	}
-	// define series
+
+	// init handlers
 	series := []racingapi.Series{
 		f1.F1API{URL: cfg.Api.F1},
 		motogp.MotoGPApi{URL: cfg.Api.Motogp},
 	}
-
-	// init handlers
-	botHandlers := handlers.NewBotHandlers(bot,
-		users.NewUserRepository(db),
-		log,
-		series)
+	botHandlers := handlers.NewBotHandlers(bot, users.NewPostgresRepository(db), series)
 
 	// schedule handler
 	botHandlers.RunAnnounceScheduler(ctx)

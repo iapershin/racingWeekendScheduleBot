@@ -15,11 +15,22 @@ type Config struct {
 	Bot            boto.BotConfig  `yaml:"bot"`
 	Postgress      postgres.Config `yaml:"postgres"`
 	Api            APIs            `yaml:"api"`
+	App            App             `yaml:"app"`
 }
 
 type APIs struct {
 	F1     string `yaml:"f1" env-required:"true"`
 	Motogp string `yaml:"motogp" env-required:"true"`
+}
+
+type App struct {
+	Logger LoggerConfig `yaml:"logger"`
+}
+
+type LoggerConfig struct {
+	Format    string `yaml:"format" env-default:"json"`
+	Level     string `yaml:"level" env-default:"info"`
+	AddSource bool   `yaml:"addSource" env-default:"true"`
 }
 
 func MustLoad(configPath string) *Config {

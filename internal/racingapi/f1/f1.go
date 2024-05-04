@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"race-weekend-bot/internal/racingapi"
 	"race-weekend-bot/internal/utils"
@@ -45,14 +46,14 @@ type F1Response struct {
 	Body       []byte
 }
 
-func (a F1API) GetData(ctx context.Context, logger racingapi.Logger) (racingapi.RaceWeekendSchedule, error) {
+func (a F1API) GetData(ctx context.Context) (racingapi.RaceWeekendSchedule, error) {
 	source := "f1.api.source"
-	log := logger.With("source", source)
+	log := slog.With("source", source)
 	output := racingapi.RaceWeekendSchedule{}
 
 	var apiResponse F1ApiResponse
 
-	response, err := a.Call(ctx, "GET", logger)
+	response, err := a.call(ctx, "GET")
 	if err != nil {
 		return output, err
 	}
@@ -81,9 +82,9 @@ func (a F1API) GetData(ctx context.Context, logger racingapi.Logger) (racingapi.
 	return fornatted, err
 }
 
-func (a F1API) Call(ctx context.Context, method string, logger racingapi.Logger) (F1Response, error) {
+func (a F1API) call(ctx context.Context, method string) (F1Response, error) {
 	source := "f1.api.source.call"
-	log := logger.With("source", source)
+	log := slog.With("source", source)
 	log.Info(fmt.Sprintf("sending request to: %s", a.URL))
 
 	req, err := http.NewRequestWithContext(ctx, method, a.URL, http.NoBody)

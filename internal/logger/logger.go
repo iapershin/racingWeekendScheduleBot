@@ -1,32 +1,57 @@
 package logger
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 )
 
+var ErrInvalidFormat = errors.New("invalid format")
+
+type Format string
+
 const (
-	envLocal = "local"
-	envProd  = "prod"
+	JSON Format = "json"
+	TEXT Format = "text"
 )
 
-func NewLogger(env string) *slog.Logger {
-	var log *slog.Logger
+type Level = slog.Level
 
-	switch env {
-	case envLocal:
-		log = slog.New(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
-	case envProd:
-		log = slog.New(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
-		)
-	default: // If env config is invalid, set prod settings by default due to security
-		log = slog.New(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
-		)
+type Logger struct {
+	*slog.Logger
+}
+
+type HandlerOptions struct {
+	Format    Format
+	Level     string
+	AddSource bool
+}
+
+func Init(opt HandlerOptions) error {
+	var handler slog.Handler
+
+	var lvl slog.Level
+	err := lvl.UnmarshalText([]byte(opt.Level))
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal log level: %w", err)
 	}
 
-	return log
+	switch opt.Format {
+	case JSON:
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     lvl,
+			AddSource: opt.AddSource,
+		})
+	case TEXT:
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     lvl,
+			AddSource: opt.AddSource,
+		})
+	default:
+		return fmt.Errorf("%w: %s", ErrInvalidFormat, opt.Format)
+	}
+
+	slog.SetDefault(slog.New(handler))
+	return nil
 }
